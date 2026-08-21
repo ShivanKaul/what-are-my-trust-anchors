@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Are My Trust Anchors?</title>
+<style>
+:root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { max-width: 1100px; margin: 0 auto; padding: 48px 24px; line-height: 1.5; }
+h1 { margin-bottom: .25rem; }
+.muted { opacity: .72; }
+.card { border: 1px solid color-mix(in srgb, currentColor 22%, transparent); border-radius: 12px; padding: 18px 20px; margin: 20px 0; }
+.good { font-weight: 700; }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+code { overflow-wrap: anywhere; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent); }
+.small { font-size: .9rem; }
+.anchor-name { font-weight: 650; }
+.sha code { display: inline-block; max-width: 12ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+</style>
+</head>
+<body>
+<h1>What Are My Trust Anchors?</h1>
+<p class="muted">Observed directly from this connection's TLS ClientHello. Nothing here comes from JavaScript.</p>
+<div class="card">
+{{if .TrustAnchors.Present}}
+  <div class="good">trust_anchors extension: present</div>
+  <p>Wire codepoint: <code>0xca34</code> · extension payload: <code>{{.TrustAnchors.ExtensionHex}}</code></p>
+  {{if .TrustAnchors.OrderHash}}
+    <p><strong>TAI ordering ID:</strong> <code>{{.TrustAnchors.OrderHash}}</code></p>
+    <p class="small muted">Reload this page to create a fresh TLS connection and compare the ID. It is a short SHA-256 hash of the exact ordered <code>trust_anchors</code> payload.</p>
+  {{end}}
+  {{if .TrustAnchors.ParseError}}
+    <p>Could not decode payload: <code>{{.TrustAnchors.ParseError}}</code></p>
+  {{else if .TrustAnchors.Empty}}
+    <p><strong>The client advertised support, but disclosed no trust-anchor IDs on this connection.</strong></p>
+  {{else}}
+    <p><strong>{{len .TrustAnchors.Anchors}} trust-anchor ID(s) disclosed:</strong></p>
+    <p class="small muted">Known IDs are resolved using certificate metadata from Chromium's Chrome Root Store. An ID can name either a root or a trusted intermediate.</p>
+    <table>
+      <thead><tr><th>Certificate</th><th>Operator</th><th>Relative OID</th><th>SHA-256</th><th>Raw bytes</th></tr></thead>
+      <tbody>
+      {{range .TrustAnchors.Anchors}}
+        {{$m := .Metadata}}
+        <tr>
+          <td>{{if $m.Name}}<span class="anchor-name">{{$m.Name}}</span>{{else}}<span class="muted">Unknown</span>{{end}}</td>
+          <td>{{if $m.Operator}}{{$m.Operator}}{{else}}<span class="muted">—</span>{{end}}</td>
+          <td><code>{{.RelativeOID}}</code>{{if .DecodeError}}<br><span class="small">{{.DecodeError}}</span>{{end}}</td>
+          <td class="sha" title="{{$m.SHA256}}">{{if $m.SHA256}}<code>{{$m.SHA256}}</code>{{else}}<span class="muted">—</span>{{end}}</td>
+          <td><code>{{.RawHex}}</code></td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+    <p class="small muted">Full Trust Anchor ID OIDs are under <code>1.3.6.1.4.1.</code> (the Private Enterprise Number arc). Metadata source: <a href="https://chromium.googlesource.com/chromium/src/+/refs/heads/main/net/data/ssl/chrome_root_store/root_store.textproto">Chromium root_store.textproto</a>.</p>
+  {{end}}
+{{else}}
+  <div class="good">trust_anchors extension: not observed</div>
+  <p><strong>This client may not implement or enable the Trust Anchor IDs extension.</strong></p>
+  <p class="small muted">The current ClientHello did not contain experimental extension <code>0xca34</code>. This does not prove the client has no trust anchors; it only means none were advertised through this mechanism on this connection.</p>
+{{end}}
+</div>
+<div class="card">
+<h2>Connection</h2>
+<table>
+<tr><th>SNI</th><td><code>{{.SNI}}</code></td></tr>
+<tr><th>ClientHello legacy_version</th><td><code>{{.LegacyVersion}}</code></td></tr>
+<tr><th>Captured record bytes</th><td>{{.RecordBytes}}</td></tr>
+</table>
+</div>
+<details class="card">
+<summary>All ClientHello extensions</summary>
+<table>
+<thead><tr><th>Type</th><th>Name</th><th>Payload bytes</th></tr></thead>
+<tbody>{{range .Extensions}}<tr><td><code>{{.Hex}}</code> ({{.Type}})</td><td>{{.Name}}</td><td>{{.Length}}</td></tr>{{end}}</tbody>
+</table>
+</details>
+<p class="small muted">JSON view: <a href="/json">/json</a>. That navigation opens a new TLS connection and reports the new ClientHello.</p>
+</body>
+</html>
