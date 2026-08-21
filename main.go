@@ -43,6 +43,7 @@ type TrustAnchorsInfo struct {
 	Present       bool       `json:"present"`
 	ExtensionHex  string     `json:"extension_hex"`
 	OrderHash     string     `json:"order_hash,omitempty"`
+	SetHash       string     `json:"set_hash,omitempty"`
 	DeclaredBytes int        `json:"declared_list_bytes"`
 	Empty         bool       `json:"empty"`
 	Anchors       []AnchorID `json:"anchors"`
@@ -423,7 +424,22 @@ func parseTrustAnchors(data []byte) TrustAnchorsInfo {
 		}
 		out.Anchors = append(out.Anchors, id)
 	}
+	if !out.Empty {
+		out.SetHash = hashAnchorSet(out.Anchors)
+	}
 	return out
+}
+
+// hashAnchorSet hashes the IDs in canonical order, so the result identifies which
+// anchors were sent without depending on the order they were sent in.
+func hashAnchorSet(anchors []AnchorID) string {
+	ids := make([]string, 0, len(anchors))
+	for _, a := range anchors {
+		ids = append(ids, a.RawHex)
+	}
+	sort.Strings(ids)
+	sum := sha256.Sum256([]byte(strings.Join(ids, ",")))
+	return hex.EncodeToString(sum[:orderHashBytes])
 }
 
 func decodeRelativeOID(raw []byte) (string, error) {

@@ -39,9 +39,13 @@ button.copy:active { transform: translateY(.5px); }
     <summary>Raw extension payload</summary>
     <pre><code>{{.TrustAnchors.ExtensionHex}}</code></pre>
   </details>
+  {{if .TrustAnchors.SetHash}}
+    <div class="row"><strong>Anchor set fingerprint:</strong> <code id="set-fingerprint">{{.TrustAnchors.SetHash}}</code> <button type="button" class="copy" data-copy="set-fingerprint">Copy</button></div>
+    <p class="small muted">Short SHA-256 hash of the disclosed IDs in sorted order. It says which anchors you trust, so it tracks your root store version and is shared with every other client on that version.</p>
+  {{end}}
   {{if .TrustAnchors.OrderHash}}
-    <div class="row"><strong>Trust anchor IDs fingerprint:</strong> <code id="fingerprint">{{.TrustAnchors.OrderHash}}</code> <button type="button" class="copy" data-copy="fingerprint">Copy</button></div>
-    <p class="small muted">Reload this page to create a fresh TLS connection and compare the ID. It is a short SHA-256 hash of the exact ordered <code>trust_anchors</code> payload.</p>
+    <div class="row"><strong>Ordering fingerprint:</strong> <code id="order-fingerprint">{{.TrustAnchors.OrderHash}}</code> <button type="button" class="copy" data-copy="order-fingerprint">Copy</button></div>
+    <p class="small muted">Short SHA-256 hash of the exact ordered <code>trust_anchors</code> payload. Chromium sends the IDs in hash-table iteration order, which is seeded per process, so this value can differ between two clients that share an anchor set fingerprint. Restart the browser to draw a new one.</p>
   {{end}}
   {{if .TrustAnchors.ParseError}}
     <p>Could not decode payload: <code>{{.TrustAnchors.ParseError}}</code></p>
