@@ -18,17 +18,27 @@ th, td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px
 .small { font-size: .9rem; }
 .anchor-name { font-weight: 650; }
 .sha code { display: inline-block; max-width: 12ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+summary { cursor: pointer; }
+details.reveal { margin: 10px 0; }
+details.reveal > summary { width: fit-content; font-size: .9rem; opacity: .72; }
+details.reveal > pre { margin: 10px 0 0; padding: 12px 14px; border-radius: 8px; background: color-mix(in srgb, currentColor 8%, transparent); font-size: .85rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+button.copy { font: inherit; font-size: .8rem; padding: 1px 9px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
+button.copy:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
 </style>
 </head>
 <body>
 <h1>What Are My Trust Anchors?</h1>
-<p class="muted">Observed directly from this connection's TLS ClientHello. Nothing here comes from JavaScript.</p>
+<p class="muted">Observed directly from this connection's TLS ClientHello.</p>
 <div class="card">
 {{if .TrustAnchors.Present}}
   <div class="good">trust_anchors extension: present</div>
-  <p>Wire codepoint: <code>0xca34</code> · extension payload: <code>{{.TrustAnchors.ExtensionHex}}</code></p>
+  <p>Wire codepoint: <code>0xca34</code>{{if .TrustAnchors.DeclaredBytes}} · {{.TrustAnchors.DeclaredBytes}}-byte identifier list{{end}}</p>
+  <details class="reveal">
+    <summary>Raw extension payload</summary>
+    <pre><code>{{.TrustAnchors.ExtensionHex}}</code></pre>
+  </details>
   {{if .TrustAnchors.OrderHash}}
-    <p><strong>TAI ordering ID:</strong> <code>{{.TrustAnchors.OrderHash}}</code></p>
+    <p><strong>Trust anchor IDs fingerprint:</strong> <code id="fingerprint">{{.TrustAnchors.OrderHash}}</code> <button type="button" class="copy" data-copy="fingerprint">Copy</button></p>
     <p class="small muted">Reload this page to create a fresh TLS connection and compare the ID. It is a short SHA-256 hash of the exact ordered <code>trust_anchors</code> payload.</p>
   {{end}}
   {{if .TrustAnchors.ParseError}}
@@ -36,19 +46,21 @@ th, td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px
   {{else if .TrustAnchors.Empty}}
     <p><strong>The client advertised support, but disclosed no trust-anchor IDs on this connection.</strong></p>
   {{else}}
-    <p><strong>{{len .TrustAnchors.Anchors}} trust-anchor ID(s) disclosed:</strong></p>
+    <p><strong>{{len .TrustAnchors.Anchors}} trust-anchor ID(s) disclosed:</strong>
+      <button type="button" class="copy" data-copy="ids-as-sent">Copy IDs as sent</button>
+      <button type="button" class="copy" data-copy="ids-sorted">Copy IDs sorted</button></p>
+    <pre hidden id="ids-as-sent">{{.TrustAnchors.OrderedOIDs}}</pre>
+    <pre hidden id="ids-sorted">{{.TrustAnchors.CanonicalOIDs}}</pre>
     <p class="small muted">Known IDs are resolved using certificate metadata from Chromium's Chrome Root Store. An ID can name either a root or a trusted intermediate.</p>
     <table>
-      <thead><tr><th>Certificate</th><th>Operator</th><th>Relative OID</th><th>SHA-256</th><th>Raw bytes</th></tr></thead>
+      <thead><tr><th>Certificate</th><th>Operator</th><th>Relative OID</th></tr></thead>
       <tbody>
       {{range .TrustAnchors.Anchors}}
         {{$m := .Metadata}}
         <tr>
-          <td>{{if $m.Name}}<span class="anchor-name">{{$m.Name}}</span>{{else}}<span class="muted">Unknown</span>{{end}}</td>
+          <td title="{{$m.SHA256}}">{{if $m.Name}}<span class="anchor-name">{{$m.Name}}</span>{{else}}<span class="muted">Unknown</span>{{end}}</td>
           <td>{{if $m.Operator}}{{$m.Operator}}{{else}}<span class="muted">—</span>{{end}}</td>
           <td><code>{{.RelativeOID}}</code>{{if .DecodeError}}<br><span class="small">{{.DecodeError}}</span>{{end}}</td>
-          <td class="sha" title="{{$m.SHA256}}">{{if $m.SHA256}}<code>{{$m.SHA256}}</code>{{else}}<span class="muted">—</span>{{end}}</td>
-          <td><code>{{.RawHex}}</code></td>
         </tr>
       {{end}}
       </tbody>
@@ -77,5 +89,6 @@ th, td { text-align: left; vertical-align: top; padding: 8px; border-bottom: 1px
 </table>
 </details>
 <p class="small muted">JSON view: <a href="/json">/json</a>. That navigation opens a new TLS connection and reports the new ClientHello.</p>
+<script>{{copyScript}}</script>
 </body>
 </html>
