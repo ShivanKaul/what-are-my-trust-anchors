@@ -5,8 +5,7 @@ primary_region = "sjc"
   TLS_HOSTNAME = "what-are-my-trust-anchors.fly.dev"
   AUTOCERT_CACHE = "/data/autocert"
 
-# The ACME cache must outlive deploys, or every deploy triggers a fresh
-# Let's Encrypt issuance and hits the 5-per-week-per-identifier limit.
+# Persist the ACME cache to avoid unnecessary certificate reissuance and rate limits.
 [mounts]
   source = "autocert_data"
   destination = "/data"

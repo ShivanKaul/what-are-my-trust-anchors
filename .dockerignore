@@ -1,0 +1,6 @@
+.git
+.github
+*.pem
+README.md
+dev-cert.sh
+fly.toml

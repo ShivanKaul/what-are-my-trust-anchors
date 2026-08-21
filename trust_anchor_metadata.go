@@ -10,10 +10,7 @@ func (a AnchorID) Metadata() trustAnchorMetadata {
 	return trustAnchorMetadataByOID[a.RelativeOID]
 }
 
-// trustAnchorMetadataByOID is derived from Chromium's Chrome Root Store
-// root_store.textproto. Trust Anchor IDs are globally scoped beneath the
-// assignee's Private Enterprise Number, so the same identifier denotes the
-// same trust anchor when advertised by another implementation.
+// trustAnchorMetadataByOID is derived from Chromium's Chrome Root Store root_store.textproto; Trust Anchor IDs are globally scoped beneath the assignee's Private Enterprise Number.
 var trustAnchorMetadataByOID = map[string]trustAnchorMetadata{
 	"52580.200109.1.7":  {Name: "QuoVadis Root CA 2 G3", Operator: "QuoVadis / DigiCert", SHA256: "8fe4fb0af93a4d0d67db0bebb23e37c71bf325dcbcdd240ea04daf58b47e1840"},
 	"52580.200109.1.8":  {Name: "QuoVadis Root CA 3 G3", Operator: "QuoVadis / DigiCert", SHA256: "88ef81de202eb018452e43f864725cea5fbd1fc2d9d205730709c5d8b8690f46"},

@@ -10,7 +10,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"html/template"
 	"io"
 	"log"
 	"net"
@@ -24,8 +23,13 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-const trustAnchorsExtension uint16 = 0xca34
-const orderHashBytes = 8
+const (
+	trustAnchorsExtension    uint16 = 0xca34
+	orderHashBytes                  = 8
+	maxConcurrentConnections        = 64
+	maxClientHelloBytes             = 64 << 10
+	maxHTTPRequestBytes             = 32 << 10
+)
 
 type AnchorID struct {
 	RawHex      string `json:"raw_hex"`
@@ -52,7 +56,6 @@ type ExtensionInfo struct {
 }
 
 type ClientHelloInfo struct {
-	RemoteAddr    string           `json:"remote_addr"`
 	SNI           string           `json:"sni,omitempty"`
 	LegacyVersion string           `json:"legacy_version"`
 	RecordBytes   int              `json:"captured_tls_record_bytes"`
@@ -92,13 +95,22 @@ func main() {
 	}
 	log.Printf("listening for raw TLS on %s", *addr)
 
+	slots := make(chan struct{}, maxConcurrentConnections)
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			log.Printf("accept: %v", err)
 			continue
 		}
-		go handleConn(conn, tlsConfig)
+		select {
+		case slots <- struct{}{}:
+			go func(conn net.Conn) {
+				defer func() { <-slots }()
+				handleConn(conn, tlsConfig)
+			}(conn)
+		default:
+			_ = conn.Close()
+		}
 	}
 }
 
@@ -142,7 +154,9 @@ func makeTLSConfig(hostname, httpAddr, cacheDir, certFile, keyFile string) (*tls
 		Addr:              httpAddr,
 		Handler:           manager.HTTPHandler(redirect),
 		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      10 * time.Second,
 		IdleTimeout:       30 * time.Second,
+		MaxHeaderBytes:    maxHTTPRequestBytes,
 	}
 	go func() {
 		log.Printf("serving ACME HTTP validation on %s for %s", httpAddr, hostname)
@@ -163,20 +177,19 @@ func handleConn(conn net.Conn, tlsConfig *tls.Config) {
 
 	captured, info, err := captureClientHello(conn)
 	if err != nil {
-		log.Printf("client hello from %s: %v", conn.RemoteAddr(), err)
+		log.Printf("client hello: %v", err)
 		return
 	}
-	info.RemoteAddr = conn.RemoteAddr().String()
 
 	_ = conn.SetDeadline(time.Now().Add(5 * time.Minute))
 	tlsConn := tls.Server(&replayConn{Conn: conn, replay: bytes.NewReader(captured)}, tlsConfig)
 	if err := tlsConn.Handshake(); err != nil {
-		log.Printf("TLS handshake from %s: %v", conn.RemoteAddr(), err)
+		log.Printf("TLS handshake: %v", err)
 		return
 	}
 	_ = conn.SetDeadline(time.Now().Add(15 * time.Second))
 
-	reader := bufio.NewReader(tlsConn)
+	reader := bufio.NewReader(io.LimitReader(tlsConn, maxHTTPRequestBytes))
 	req, err := http.ReadRequest(reader)
 	if err != nil {
 		return
@@ -214,6 +227,7 @@ func handleConn(conn net.Conn, tlsConfig *tls.Config) {
 	fmt.Fprintf(writer, "Content-Length: %d\r\n", len(body))
 	fmt.Fprint(writer, "Cache-Control: no-store\r\n")
 	fmt.Fprint(writer, "Connection: close\r\n")
+	fmt.Fprint(writer, "Referrer-Policy: no-referrer\r\n")
 	fmt.Fprint(writer, "X-Content-Type-Options: nosniff\r\n")
 	fmt.Fprint(writer, "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'\r\n")
 	fmt.Fprint(writer, "\r\n")
@@ -226,7 +240,7 @@ func captureClientHello(conn net.Conn) ([]byte, ClientHelloInfo, error) {
 	var handshake bytes.Buffer
 	var expected int
 
-	for captured.Len() < 1<<20 {
+	for captured.Len() < maxClientHelloBytes {
 		header := make([]byte, 5)
 		if _, err := io.ReadFull(conn, header); err != nil {
 			return nil, ClientHelloInfo{}, err
@@ -253,7 +267,7 @@ func captureClientHello(conn net.Conn) ([]byte, ClientHelloInfo, error) {
 				return nil, ClientHelloInfo{}, fmt.Errorf("expected ClientHello, got handshake type %d", h[0])
 			}
 			expected = 4 + int(h[1])<<16 + int(h[2])<<8 + int(h[3])
-			if expected > 1<<20 {
+			if expected > maxClientHelloBytes {
 				return nil, ClientHelloInfo{}, errors.New("ClientHello too large")
 			}
 		}
@@ -474,5 +488,3 @@ func extensionName(typ uint16) string {
 func isGREASE(v uint16) bool {
 	return byte(v>>8) == byte(v) && byte(v)&0x0f == 0x0a
 }
-
-var pageTemplate *template.Template

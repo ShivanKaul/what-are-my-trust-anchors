@@ -1,13 +1,11 @@
 package main
 
 import (
-	"embed"
+	_ "embed"
 	"html/template"
 )
 
 //go:embed index.html
-var templateFiles embed.FS
+var indexHTML string
 
-func init() {
-	pageTemplate = template.Must(template.ParseFS(templateFiles, "index.html"))
-}
+var pageTemplate = template.Must(template.New("index.html").Parse(indexHTML))
