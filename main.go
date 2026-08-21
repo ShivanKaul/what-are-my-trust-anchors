@@ -49,36 +49,25 @@ type TrustAnchorsInfo struct {
 	ParseError    string     `json:"parse_error,omitempty"`
 }
 
-func (t TrustAnchorsInfo) oids() []string {
-	ids := make([]string, 0, len(t.Anchors))
+func (t TrustAnchorsInfo) lines() []string {
+	out := make([]string, 0, len(t.Anchors))
 	for _, a := range t.Anchors {
-		ids = append(ids, a.RelativeOID)
-	}
-	return ids
-}
-
-func (t TrustAnchorsInfo) OrderedOIDs() string { return strings.Join(t.oids(), "\n") }
-
-func (t TrustAnchorsInfo) CanonicalOIDs() string {
-	ids := t.oids()
-	sort.Slice(ids, func(i, j int) bool { return lessOID(ids[i], ids[j]) })
-	return strings.Join(ids, "\n")
-}
-
-func lessOID(a, b string) bool {
-	as, bs := strings.Split(a, "."), strings.Split(b, ".")
-	for i := 0; i < len(as) && i < len(bs); i++ {
-		if as[i] == bs[i] {
+		m := a.Metadata()
+		if m.Name == "" {
+			out = append(out, a.RelativeOID)
 			continue
 		}
-		an, aerr := strconv.ParseUint(as[i], 10, 64)
-		bn, berr := strconv.ParseUint(bs[i], 10, 64)
-		if aerr != nil || berr != nil {
-			return as[i] < bs[i]
-		}
-		return an < bn
+		out = append(out, m.Operator+"\t"+m.Name)
 	}
-	return len(as) < len(bs)
+	return out
+}
+
+func (t TrustAnchorsInfo) OrderedList() string { return strings.Join(t.lines(), "\n") }
+
+func (t TrustAnchorsInfo) SortedList() string {
+	l := t.lines()
+	sort.Strings(l)
+	return strings.Join(l, "\n")
 }
 
 type ExtensionInfo struct {
@@ -243,6 +232,9 @@ func handleConn(conn net.Conn, tlsConfig *tls.Config) {
 		var b bytes.Buffer
 		err = pageTemplate.Execute(&b, info)
 		body = b.Bytes()
+	case "/copy.js":
+		body = []byte(copyJS)
+		contentType = "text/javascript; charset=utf-8"
 	default:
 		status = "404 Not Found"
 		body = []byte("not found\n")
@@ -262,7 +254,7 @@ func handleConn(conn net.Conn, tlsConfig *tls.Config) {
 	fmt.Fprint(writer, "Connection: close\r\n")
 	fmt.Fprint(writer, "Referrer-Policy: no-referrer\r\n")
 	fmt.Fprint(writer, "X-Content-Type-Options: nosniff\r\n")
-	fmt.Fprintf(writer, "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; script-src %s; base-uri 'none'; frame-ancestors 'none'\r\n", scriptCSPSource)
+	fmt.Fprint(writer, "Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; base-uri 'none'; frame-ancestors 'none'\r\n")
 	fmt.Fprint(writer, "\r\n")
 	_, _ = writer.Write(body)
 	_ = writer.Flush()

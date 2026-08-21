@@ -22,8 +22,10 @@ summary { cursor: pointer; }
 details.reveal { margin: 10px 0; }
 details.reveal > summary { width: fit-content; font-size: .9rem; opacity: .72; }
 details.reveal > pre { margin: 10px 0 0; padding: 12px 14px; border-radius: 8px; background: color-mix(in srgb, currentColor 8%, transparent); font-size: .85rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-button.copy { font: inherit; font-size: .8rem; padding: 1px 9px; border: 1px solid color-mix(in srgb, currentColor 30%, transparent); border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
-button.copy:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0; }
+button.copy { font: inherit; font-size: .78rem; line-height: 1.75; min-width: 8ch; padding: 0 11px; border: 1px solid color-mix(in srgb, currentColor 22%, transparent); border-radius: 999px; background: color-mix(in srgb, currentColor 4%, transparent); color: inherit; cursor: pointer; white-space: nowrap; }
+button.copy:hover { background: color-mix(in srgb, currentColor 13%, transparent); }
+button.copy:active { transform: translateY(.5px); }
 </style>
 </head>
 <body>
@@ -38,7 +40,7 @@ button.copy:hover { background: color-mix(in srgb, currentColor 10%, transparent
     <pre><code>{{.TrustAnchors.ExtensionHex}}</code></pre>
   </details>
   {{if .TrustAnchors.OrderHash}}
-    <p><strong>Trust anchor IDs fingerprint:</strong> <code id="fingerprint">{{.TrustAnchors.OrderHash}}</code> <button type="button" class="copy" data-copy="fingerprint">Copy</button></p>
+    <div class="row"><strong>Trust anchor IDs fingerprint:</strong> <code id="fingerprint">{{.TrustAnchors.OrderHash}}</code> <button type="button" class="copy" data-copy="fingerprint">Copy</button></div>
     <p class="small muted">Reload this page to create a fresh TLS connection and compare the ID. It is a short SHA-256 hash of the exact ordered <code>trust_anchors</code> payload.</p>
   {{end}}
   {{if .TrustAnchors.ParseError}}
@@ -46,11 +48,11 @@ button.copy:hover { background: color-mix(in srgb, currentColor 10%, transparent
   {{else if .TrustAnchors.Empty}}
     <p><strong>The client advertised support, but disclosed no trust-anchor IDs on this connection.</strong></p>
   {{else}}
-    <p><strong>{{len .TrustAnchors.Anchors}} trust-anchor ID(s) disclosed:</strong>
-      <button type="button" class="copy" data-copy="ids-as-sent">Copy IDs as sent</button>
-      <button type="button" class="copy" data-copy="ids-sorted">Copy IDs sorted</button></p>
-    <pre hidden id="ids-as-sent">{{.TrustAnchors.OrderedOIDs}}</pre>
-    <pre hidden id="ids-sorted">{{.TrustAnchors.CanonicalOIDs}}</pre>
+    <div class="row"><strong>{{len .TrustAnchors.Anchors}} trust-anchor ID(s) disclosed:</strong>
+      <button type="button" class="copy" data-copy="list-as-sent">Copy as sent</button>
+      <button type="button" class="copy" data-copy="list-sorted">Copy sorted</button></div>
+    <pre hidden id="list-as-sent">{{.TrustAnchors.OrderedList}}</pre>
+    <pre hidden id="list-sorted">{{.TrustAnchors.SortedList}}</pre>
     <p class="small muted">Known IDs are resolved using certificate metadata from Chromium's Chrome Root Store. An ID can name either a root or a trusted intermediate.</p>
     <table>
       <thead><tr><th>Certificate</th><th>Operator</th><th>Relative OID</th></tr></thead>
@@ -89,6 +91,6 @@ button.copy:hover { background: color-mix(in srgb, currentColor 10%, transparent
 </table>
 </details>
 <p class="small muted">JSON view: <a href="/json">/json</a>. That navigation opens a new TLS connection and reports the new ClientHello.</p>
-<script>{{copyScript}}</script>
+<script src="/copy.js"></script>
 </body>
 </html>
