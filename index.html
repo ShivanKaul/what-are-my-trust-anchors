@@ -41,11 +41,11 @@ button.copy:active { transform: translateY(.5px); }
   </details>
   {{if .TrustAnchors.SetHash}}
     <div class="row"><strong>Anchor set fingerprint:</strong> <code id="set-fingerprint">{{.TrustAnchors.SetHash}}</code> <button type="button" class="copy" data-copy="set-fingerprint">Copy</button></div>
-    <p class="small muted">Short SHA-256 hash of the disclosed IDs in sorted order. It says which anchors you trust, so it tracks your root store version and is shared with every other client on that version.</p>
+    <p class="small muted">Hash of your IDs sorted: which anchors you trust. Shared with every client on your root store version.</p>
   {{end}}
   {{if .TrustAnchors.OrderHash}}
-    <div class="row"><strong>Ordering fingerprint:</strong> <code id="order-fingerprint">{{.TrustAnchors.OrderHash}}</code> <button type="button" class="copy" data-copy="order-fingerprint">Copy</button></div>
-    <p class="small muted">Short SHA-256 hash of the exact ordered <code>trust_anchors</code> payload. Chromium sends the IDs in hash-table iteration order, which is seeded per process, so this value can differ between two clients that share an anchor set fingerprint. Restart the browser to draw a new one.</p>
+    <div class="row"><strong>Send-order fingerprint:</strong> <code id="order-fingerprint">{{.TrustAnchors.OrderHash}}</code> <button type="button" class="copy" data-copy="order-fingerprint">Copy</button></div>
+    <p class="small muted">Hash of your IDs in the order sent: Chromium randomizes that order per process, so it differs between clients with the same set. Check in a different profile to see it change.</p>
   {{end}}
   {{if .TrustAnchors.ParseError}}
     <p>Could not decode payload: <code>{{.TrustAnchors.ParseError}}</code></p>
@@ -53,10 +53,10 @@ button.copy:active { transform: translateY(.5px); }
     <p><strong>The client advertised support, but disclosed no trust-anchor IDs on this connection.</strong></p>
   {{else}}
     <div class="row"><strong>{{len .TrustAnchors.Anchors}} trust-anchor ID(s) disclosed:</strong>
-      <button type="button" class="copy" data-copy="list-as-sent">Copy as sent</button>
-      <button type="button" class="copy" data-copy="list-sorted">Copy sorted</button></div>
-    <pre hidden id="list-as-sent">{{.TrustAnchors.OrderedList}}</pre>
+      <button type="button" class="copy" data-copy="list-sorted">Copy sorted</button>
+      <button type="button" class="copy" data-copy="list-as-sent">Copy as sent</button></div>
     <pre hidden id="list-sorted">{{.TrustAnchors.SortedList}}</pre>
+    <pre hidden id="list-as-sent">{{.TrustAnchors.OrderedList}}</pre>
     <p class="small muted">Known IDs are resolved using certificate metadata from Chromium's Chrome Root Store. An ID can name either a root or a trusted intermediate.</p>
     <table>
       <thead><tr><th>Certificate</th><th>Operator</th><th>Relative OID</th></tr></thead>
