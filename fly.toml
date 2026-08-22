@@ -1,8 +1,8 @@
-app = "alternate-trust-anchor-testing"
+app = "what-are-my-trust-anchors-xopddw"
 primary_region = "sjc"
 
 [env]
-  TLS_HOSTNAME = "alternate-trust-anchor-testing.fly.dev"
+  TLS_HOSTNAME = "what-are-my-trust-anchors-xopddw.fly.dev"
   AUTOCERT_CACHE = "/data/autocert"
 
 # Persist the ACME cache to avoid unnecessary certificate reissuance and rate limits.
