@@ -40,11 +40,11 @@ button.copy:active { transform: translateY(.5px); }
     <pre><code>{{.TrustAnchors.ExtensionHex}}</code></pre>
   </details>
   {{if .TrustAnchors.SetHash}}
-    <div class="row"><strong>Anchor set fingerprint:</strong> <code id="set-fingerprint">{{.TrustAnchors.SetHash}}</code> <button type="button" class="copy" data-copy="set-fingerprint">Copy</button></div>
+    <div class="row"><strong>Sorted anchor IDs fingerprint:</strong> <code id="set-fingerprint">{{.TrustAnchors.SetHash}}</code> <button type="button" class="copy" data-copy="set-fingerprint">Copy</button></div>
     <p class="small muted">Hash of your IDs sorted: which anchors you trust. Shared with every client on your root store version.</p>
   {{end}}
   {{if .TrustAnchors.OrderHash}}
-    <div class="row"><strong>Send-order fingerprint:</strong> <code id="order-fingerprint">{{.TrustAnchors.OrderHash}}</code> <button type="button" class="copy" data-copy="order-fingerprint">Copy</button></div>
+    <div class="row"><strong>Send-order anchor IDs fingerprint:</strong> <code id="order-fingerprint">{{.TrustAnchors.OrderHash}}</code> <button type="button" class="copy" data-copy="order-fingerprint">Copy</button></div>
     <p class="small muted">Hash of your IDs in the order sent: Chromium randomizes that order per process, so it differs between clients with the same set. Check in a different profile to see it change.</p>
   {{end}}
   {{if .TrustAnchors.ParseError}}
