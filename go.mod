@@ -1,6 +1,6 @@
 module github.com/ShivanKaul/what-are-my-trust-anchors
 
-go 1.26.6
+go 1.26.10
 
 require golang.org/x/crypto v0.55.0
 
